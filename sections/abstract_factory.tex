@@ -1,10 +1,364 @@
 \section{Abstract Factory}
 
-\subsection{Definition}
+The abstract factory pattern provides a way to encapsulate a group of individual factories that have a common theme without specifying their concrete classes. In normal usage, the client software creates a concrete implementation of the abstract factory and then uses the generic interface of the factory to create the concrete objects that are part of the theme. The client does not know which concrete objects it gets from each of these internal factories since it uses only the generic interfaces of their products. This pattern separates the details of implementation of a set of objects from their general usage and relies on object composition, as object creation is implemented in methods exposed in the factory interface.
 
-The abstract factory pattern provides a way to encapsulate a group of individual factories that have a common theme without specifying their concrete classes. In normal usage, the client software creates a concrete implementation of the abstract factory and then uses the generic interface of the factory to create the concrete objects that are part of the theme. The client doesn't know (or care) which concrete objects it gets from each of these internal factories, since it uses only the generic interfaces of their products. This pattern separates the details of implementation of a set of objects from their general usage and relies on object composition, as object creation is implemented in methods exposed in the factory interface.
-
-\subsection{Role}
+\subsection*{Role}
 
 
-\subsection{Example}
+\subsection*{Example}
+
+Figure~\ref{fig:abstract_factory} presents the UML diagram of the Abstract Factory design pattern in the project \textit{openjms}.
+
+\begin{figure}[htb]
+    \centering
+    \includegraphics[width=\columnwidth]{images/abstract_factory.png}
+    \caption{Abstract Factory design pattern in the project \textit{openjms}}
+    \label{}
+\end{figure}
+
+An instance of the client class manages the connections. When it determines the connection that needs to be created, it passes the connection request info to either one of the methods \texttt{createConnectionFactory}, \texttt{createManagedConenction}, \texttt{createManagedConnectionAcceptor} of a \texttt{ManagedConnectionFactory} object. These methods return an instance of the class \texttt{HTTPManagedConnectionFactory} that implements the \texttt{AbstractHTTPManagedConnectionFactory} interface for matching the managed connections. The \texttt{Client} object can then use the AbstractHTTPManagedConnectionFactory object to create objects that manage and match connections.
+
+%--------------------------------------------------------------------------------------------%
+
+\begin{figure}[!tbp]
+\centering
+\lstset{language=Java, stepnumber=1, showspaces=false, showstringspaces=false,breaklines=true}
+\begin{lstlisting}
+public interface ManagedConnectionFactory {
+
+    ConnectionFactory createConnectionFactory(ConnectionManager manager) 
+        throws ResourceException;
+
+    ManagedConnection createManagedConnection(Principal principal, 
+         ConnectionRequestInfo info) throws ResourceException;
+
+    ManagedConnectionAcceptor createManagedConnectionAcceptor(
+        Authenticator authenticator, ConnectionRequestInfo info) 
+        throws ResourceException;
+
+    ManagedConnection matchManagedConnections(List connections, Principal principal,
+        ConnectionRequestInfo info) throws ResourceException;
+
+\end{lstlisting}
+\caption{ManagedConnectionFactory.java}
+\label{}
+\end{figure}
+
+%--------------------------------------------------------------------------------------------%
+
+\begin{figure}[!tbp]
+\centering
+\lstset{language=Java, stepnumber=1, showspaces=false, showstringspaces=false,breaklines=true}
+\begin{lstlisting}
+
+public abstract class AbstractHTTPManagedConnectionFactory implements ManagedConnectionFactory {
+
+    public ManagedConnection matchManagedConnections(List connections,
+        Principal principal, ConnectionRequestInfo info) throws ResourceException {
+        ManagedConnection result = null;
+
+        if (info instanceof HTTPRequestInfo) {
+            HTTPRequestInfo requestInfo = (HTTPRequestInfo) info;
+            URI uri = URIHelper.convertHostToAddress(requestInfo.getURI());
+            Iterator iterator = connections.iterator();
+            while (iterator.hasNext()) {
+                AbstractHTTPManagedConnection connection =
+                        (AbstractHTTPManagedConnection) iterator.next();
+                if (connection.hasPrincipal(principal)
+                    && (uri.equals(connection.getRemoteURI())
+                        || uri.equals(connection.getLocalURI()))) {
+                    result = connection;
+                    break;
+                }
+            }
+        }
+        return result;
+    }
+
+    public ManagedConnectionAcceptor matchManagedConnectionAcceptors(
+            List acceptors, ConnectionRequestInfo info) throws ResourceException {
+        ManagedConnectionAcceptor result = null;
+
+        if (info instanceof SocketRequestInfo) {
+            Iterator iterator = acceptors.iterator();
+            while (iterator.hasNext()) {
+                SocketManagedConnectionAcceptor acceptor =
+                        (SocketManagedConnectionAcceptor) iterator.next();
+                if (info.equals(acceptor.getRequestInfo())) {
+                    result = acceptor;
+                    break;
+                }
+            }
+        }
+        return result;
+    }
+}
+
+\end{lstlisting}
+\caption{AbstractHTTPManagedConnectionFactory.java}
+\label{}
+\end{figure}
+
+%--------------------------------------------------------------------------------------------%
+
+\begin{figure}[!tbp]
+\centering
+\lstset{language=Java, stepnumber=1, showspaces=false, showstringspaces=false,breaklines=true}
+\begin{lstlisting}
+
+
+public class HTTPManagedConnectionFactory extends AbstractHTTPManagedConnectionFactory {
+
+    public ConnectionFactory createConnectionFactory(ConnectionManager manager)
+            throws ResourceException {
+        return new HTTPConnectionFactory(this, manager);
+    }
+
+    public ManagedConnection createManagedConnection(Principal principal,
+                                                     ConnectionRequestInfo info)
+            throws ResourceException {
+        if (!(info instanceof HTTPRequestInfo)) {
+            throw new ResourceException("Argument 'info' must be of type "
+                                        + HTTPRequestInfo.class.getName());
+        }
+
+        return new HTTPManagedConnection(principal, (HTTPRequestInfo) info);
+    }
+
+    public ManagedConnectionAcceptor createManagedConnectionAcceptor(
+            Authenticator authenticator, ConnectionRequestInfo info)
+            throws ResourceException {
+
+        if (!(info instanceof SocketRequestInfo)) {
+            throw new ResourceException("Argument 'info' must be of type "
+                                        + SocketRequestInfo.class.getName());
+        }
+
+        return new HTTPManagedConnectionAcceptor(authenticator,
+                                                 (SocketRequestInfo) info);
+    }
+
+}
+\end{lstlisting}
+\caption{HTTPManagedConnectionFactory.java}
+\label{}
+\end{figure}
+
+%--------------------------------------------------------------------------------------------%
+
+\begin{figure}[!tbp]
+\centering
+\lstset{language=Java, stepnumber=1, showspaces=false, showstringspaces=false,breaklines=true}
+\begin{lstlisting}
+public interface ConnectionFactory {
+
+    boolean canConnect(URI uri);
+
+    Connection getConnection(Principal principal, URI uri) throws ResourceException;
+
+    Connection getConnection(Principal principal, URI uri, Map properties) throws ResourceException;
+
+    boolean canAccept(URI uri);
+
+    void accept(URI uri) throws ResourceException;
+
+    void accept(URI uri, Map properties) throws ResourceException;
+
+}
+\end{lstlisting}
+\caption{ConnectionFactory.java}
+\label{}
+\end{figure}
+
+%--------------------------------------------------------------------------------------------%
+\begin{figure}[!tbp]
+\centering
+\lstset{language=Java, stepnumber=1, showspaces=false, showstringspaces=false,breaklines=true}
+\begin{lstlisting}
+
+public interface ManagedConnection {
+
+    void setInvocationHandler(InvocationHandler handler) throws ResourceException;
+
+    void setConnectionEventListener(ManagedConnectionListener listener) throws ResourceException;
+
+    Connection getConnection() throws ResourceException;
+
+    void ping() throws ResourceException;
+
+    URI getRemoteURI() throws ResourceException;
+
+    URI getLocalURI() throws ResourceException;
+
+    Principal getPrincipal() throws ResourceException;
+
+    void destroy() throws ResourceException;
+
+}
+\end{lstlisting}
+\caption{ManagedConnection.java}
+\label{}
+\end{figure}
+
+%--------------------------------------------------------------------------------------------%
+\begin{figure}[!tbp]
+\centering
+\lstset{language=Java, stepnumber=1, showspaces=false, showstringspaces=false,breaklines=true}
+\begin{lstlisting}
+
+public interface ManagedConnectionAcceptor {
+
+    void accept(ManagedConnectionAcceptorListener listener)
+            throws ResourceException;
+
+    URI getURI() throws ResourceException;
+    
+    void close() throws ResourceException;
+}
+\end{lstlisting}
+\caption{ManagedConnectionAcceptor.java}
+\label{}
+\end{figure}
+
+%--------------------------------------------------------------------------------------------%
+
+\begin{figure}[!tbp]
+\centering
+\lstset{language=Java,basicstyle=\scriptsize, stepnumber=1, showspaces=false, showstringspaces=false,breaklines=true}
+\begin{lstlisting}
+
+public abstract class AbstractConnectionManager implements ConnectionManager, ConnectionFactory {
+
+    private final Map _factories = new HashMap();
+    private final InvocationHandler _handler;
+    private final Authenticator _authenticator;
+    private final Map _connectionFactories = new HashMap();
+    private final Map _properties;
+    private CallerListener _listener;
+
+    public AbstractConnectionManager(InvocationHandler handler, Authenticator authenticator, Map properties) {
+        if (handler == null) {
+            throw new IllegalArgumentException("Argument 'handler' is null");
+        }
+        if (authenticator == null) {
+            throw new IllegalArgumentException(
+                    "Argument 'authenticator' is null");
+        }
+        _handler = handler;
+        _authenticator = authenticator;
+        _properties = properties;
+    }
+
+
+    public void accept(ManagedConnectionFactory factory, ConnectionRequestInfo info) throws ResourceException {
+        ConnectionPool pool = getConnectionPool(factory);
+        ManagedConnectionAcceptor acceptor =
+                pool.matchManagedConnectionAcceptors(info);
+        if (acceptor == null) {
+            acceptor = pool.createManagedConnectionAcceptor(_authenticator, info);
+            acceptor.accept(pool.getManagedConnectionAcceptorListener());
+        }
+    }
+
+    public boolean canConnect(URI uri) {
+        ConnectionFactory factory = getFactoryForConnect(uri);
+        return (factory != null);
+    }
+
+    public Connection getConnection(Principal principal, URI uri) throws ResourceException {
+        return getConnection(principal, uri, null);
+    }
+
+    public Connection getConnection(Principal principal, URI uri, Map properties) throws ResourceException {
+        ConnectionFactory factory = getFactoryForConnect(uri);
+        if (factory == null) {
+            throw new ResourceException("No connector for URI=" + uri);
+        }
+        return factory.getConnection(principal, uri, properties);
+    }
+
+    public boolean canAccept(URI uri) {
+        ConnectionFactory factory = getFactoryForAccept(uri);
+        return (factory != null);
+    }
+
+    public void accept(URI uri) throws ResourceException {
+        accept(uri, null);
+    }
+
+    public void accept(URI uri, Map properties) throws ResourceException {
+        ConnectionFactory factory = getFactoryForAccept(uri);
+        if (factory == null) {
+            throw new ResourceException("No connector for URI=" + uri);
+        }
+        factory.accept(uri, properties);
+    }
+    
+    // Other methods
+}
+
+\end{lstlisting}
+\caption{AbstractConnectionManager.java}
+\label{}
+\end{figure}
+
+
+%--------------------------------------------------------------------------------------------%
+
+\begin{figure}[!tbp]
+\centering
+\lstset{language=Java, stepnumber=1, showspaces=false, showstringspaces=false,breaklines=true}
+\begin{lstlisting}
+
+final class ManagedConnectionHandle implements ManagedConnection {
+
+ public void setInvocationHandler(InvocationHandler handler)
+            throws ResourceException {
+        _connection.setInvocationHandler(handler);
+    }
+
+ public void setConnectionEventListener(ManagedConnectionListener listener)
+            throws ResourceException {
+        _connection.setConnectionEventListener(listener);
+    }
+
+    public Connection getConnection() throws ResourceException {
+        Connection connection = _connection.getConnection();
+        return new ConnectionHandle(connection);
+    }
+    
+     public synchronized void ping() throws ResourceException {
+        try {
+            _pinging = true;
+            _pingWaits = 0;
+            _connection.ping();
+        } catch (ResourceException exception) {
+            _pinging = false;
+            throw exception;
+        }
+    }
+    
+     public URI getRemoteURI() throws ResourceException {
+        return _connection.getRemoteURI();
+    }
+    
+     public URI getLocalURI() throws ResourceException {
+        return _connection.getLocalURI();
+    }
+    
+      public Principal getPrincipal() throws ResourceException {
+        return _connection.getPrincipal();
+    }
+    
+        public void destroy() throws ResourceException {
+        _connection.destroy();
+    }
+    
+    // Other methods
+
+}
+
+\end{lstlisting}
+\caption{ManagedConnectionHandle.java}
+\label{}
+\end{figure}
