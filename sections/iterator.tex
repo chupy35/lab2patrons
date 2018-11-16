@@ -1,12 +1,12 @@
 \section{Iterator}
 
-This iterator pattern is a pattern used to get access to the elements of a collection in a object secuentially without the need to know or expose its underlying representation.
+This iterator pattern is a pattern used to get access to the elements of a collection in a object sequentially without the need to know or expose its underlying representation.
 
 % Description of the design pattern
 
 \subsection*{Role}
 
-The Iterator pattern here plays the role to secure the elements of the collections. SimplePrincipalCollection play the role of the internal design of the iterator, while the DelegatingSubject is the security layer that handles the collection and the other interfaces that extend the collections withouth exposing all elements of the collection.
+The Iterator pattern here plays the role to secure the elements of the collections. SimplePrincipalCollection play the role of the internal design of the iterator, while the DelegatingSubject is the security layer that handles the collection and the other interfaces that extend the collections without exposing all elements of the collection.
 
 \subsection*{Example}
 
@@ -193,7 +193,7 @@ public interface PrincipalCollection extends Iterable, Serializable {
 \label{PrincipalCollection}
 \end{figure}
 
-The DelegatingSubject class, delegates the method calls and iterates the objects withouth exposing the whole colection:
+The DelegatingSubject class, delegates the method calls and iterates the objects without exposing the whole collection:
 
 \begin{figure}[!tbp]
 \centering
