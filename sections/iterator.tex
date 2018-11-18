@@ -1,50 +1,40 @@
 \section{Iterator}
 
-This iterator pattern is a pattern used to get access to the elements of a collection in a object sequentially without the need to know or expose its underlying representation.
+Iterator is a design pattern used to get access to the elements of a collection in an object sequentially without the need to know or expose its underlying representation.
 
 % Description of the design pattern
 
-\subsection*{Role}
-
-The Iterator pattern here plays the role to secure the elements of the collections. SimplePrincipalCollection play the role of the internal design of the iterator, while the DelegatingSubject is the security layer that handles the collection and the other interfaces that extend the collections without exposing all elements of the collection.
-
 \subsection*{Example}
 
-\begin{center}
-\includegraphics[width=16cm, height=19cm]{images/iterator.png}
-\end{center}
+Figure~\ref{fig:iterator} presents the UML diagram for the iterator pattern in the project \textit{jsecurity}. In the diagram, \texttt{SimplePrincipalCollection} plays the role of the internal design of the iterator, while the \texttt{DelegatingSubject} is the security layer that handles the collection and other interfaces that extend the collections without exposing all elements of the collection. 
 
-In the program "18_jsecurity" in "org.jsecurity.subject/SimplePrincipalCollection" class that implements the MutablePrincipalCollection in which they implement an internal design of the iterator for the collection:
+\begin{figure}[htb]
+    \centering
+    \includegraphics[width=\columnwidth]{images/iterator.png}
+    \caption{Iterator design pattern in the project \textit{jsecurity}}
+    \label{fig:iterator}
+\end{figure}
+\FloatBarrier
 
-\begin{figure}[!tbp]
+Figure~\ref{fig:SimplePrincipalColletion} shows the source code of the class \texttt{SimplePrincipalCollection} that implements the \texttt{MutablePrincipalCollection}, in which they implement an internal design of the iterator for the collection.
+
+\begin{figure}[htb]
 \centering
-\lstset{language=Java, stepnumber=1, showspaces=false, showstringspaces=false,breaklines=true}
+\lstset{language=Java, basicstyle=\scriptsize, stepnumber=1, showspaces=false, showstringspaces=false,breaklines=true}
 \begin{lstlisting}
 
 public class SimplePrincipalCollection implements MutablePrincipalCollection {
 
     private Map<String, Set> realmPrincipals;
-
-    public SimplePrincipalCollection() {
-    }
+    public SimplePrincipalCollection() {}
 
     public SimplePrincipalCollection(Object principal, String realmName) {
-        if (principal instanceof Collection) {
-            addAll((Collection) principal, realmName);
-        } else {
-            add(principal, realmName);
-        }
+        if (principal instanceof Collection) addAll((Collection) principal, realmName);
+        } else { add(principal, realmName); }
     }
+    public SimplePrincipalCollection(Collection principals, String realmName) {addAll(principals, realmName);}
 
-    public SimplePrincipalCollection(Collection principals, String realmName) {
-        addAll(principals, realmName);
-    }
-
-    public SimplePrincipalCollection(PrincipalCollection principals) {
-        addAll(principals);
-    }
-
-    protected Collection getPrincipalsLazy(String realmName) {
+    protected Collection getPrincipalsLazy(String realmName){
         if (realmPrincipals == null) {
             realmPrincipals = new LinkedHashMap<String, Set>();
         }
@@ -55,17 +45,13 @@ public class SimplePrincipalCollection implements MutablePrincipalCollection {
         }
         return principals;
     }
-
     public void add(Object principal, String realmName) {
         if (realmName == null) {
             throw new IllegalArgumentException("realmName argument cannot be null.");
-        }
-        if (principal == null) {
+        } if (principal == null) {
             throw new IllegalArgumentException("principal argument cannot be null.");
-        }
-        getPrincipalsLazy(realmName).add(principal);
+        } getPrincipalsLazy(realmName).add(principal);
     }
-
     public void addAll(Collection principals, String realmName) {
         if (realmName == null) {
             throw new IllegalArgumentException("realmName argument cannot be null.");
@@ -78,80 +64,31 @@ public class SimplePrincipalCollection implements MutablePrincipalCollection {
         }
         getPrincipalsLazy(realmName).addAll(principals);
     }
-
     public void addAll(PrincipalCollection principals) {
         if (principals.getRealmNames() != null) {
             for (String realmName : principals.getRealmNames()) {
                 for (Object principal : principals.fromRealm(realmName)) {
                     add(principal, realmName);
-                }
-            }
-        }
-    }
-
-    public <T> T oneByType(Class<T> type) {
-        if (realmPrincipals == null || realmPrincipals.isEmpty()) {
-            return null;
-        }
-        Collection<Set> values = realmPrincipals.values();
-        for (Set set : values) {
-            for (Object o : set) {
-                if (type.isAssignableFrom(o.getClass())) {
-                    return (T) o;
-                }
-            }
-        }
-        return null;
-    }
-
-    public <T> Collection<T> byType(Class<T> type) {
-        if (realmPrincipals == null || realmPrincipals.isEmpty()) {
-            return Collections.EMPTY_SET;
-        }
-        Set<T> typed = new LinkedHashSet<T>();
-        Collection<Set> values = realmPrincipals.values();
-        for (Set set : values) {
-            for (Object o : set) {
-                if (type.isAssignableFrom(o.getClass())) {
-                    typed.add((T) o);
-                }
-            }
-        }
-        if (typed.isEmpty()) {
-            return Collections.EMPTY_SET;
-        }
-        return Collections.unmodifiableSet(typed);
-    }
-
+                }}}}
     public List asList() {
         Set all = asSet();
-        if (all.isEmpty()) {
-            return Collections.EMPTY_LIST;
-        }
+        if (all.isEmpty()) {return Collections.EMPTY_LIST;}
         return Collections.unmodifiableList(new ArrayList(all));
     }
 
-    public Set asSet() {
-        if (realmPrincipals == null || realmPrincipals.isEmpty()) {
-            return Collections.EMPTY_SET;
-        }
-        Set aggregated = new LinkedHashSet();
-        Collection<Set> values = realmPrincipals.values();
 
-
-    public Iterator iterator() {
-        return asSet().iterator();
-    }
+    public Iterator iterator() { return asSet().iterator(); }
 \end{lstlisting}
-\caption{SimplePrincipalColletion.java}
-\label{SimplePrincipalColletion}
+\caption{[Iterator] SimplePrincipalColletion.java}
+\label{fig:SimplePrincipalColletion}
 \end{figure}
+\FloatBarrier
 
-In the interface in MutablePrincipalCollection, we can see it extends the principal collection adding all the principals to the given collection.
+Figure~\ref{fig:AttributeModelBuilder} presents the implementation of the interface \texttt{MutablePrincipalCollection}. We can see it extends the principal collection adding all the principals to the given collection.
 
-\begin{figure}[!tbp]
+\begin{figure}[htb]
 \centering
-\lstset{language=Java, stepnumber=1, showspaces=false, showstringspaces=false,breaklines=true}
+\lstset{language=Java, basicstyle=\scriptsize, stepnumber=1, showspaces=false, showstringspaces=false,breaklines=true}
 \begin{lstlisting}
 
 public interface MutablePrincipalCollection extends PrincipalCollection {
@@ -162,19 +99,19 @@ public interface MutablePrincipalCollection extends PrincipalCollection {
 
     void addAll(PrincipalCollection principals);
 
-
     void clear();
 }
 \end{lstlisting}
-\caption{AttributeModelBuilder.java}
-\label{AttributeModelBuilder}
+\caption{[Iterator] AttributeModelBuilder.java}
+\label{fig:AttributeModelBuilder}
 \end{figure}
+\FloatBarrier
 
-In the interface PrincipalCollection they return the collection info necessary in different functions:
+Figure~\ref{fig:PrincipalCollection} presents the interface \texttt{PrincipalCollection}, that returns the collection info necessary in different functions.
 
-\begin{figure}[!tbp]
+\begin{figure}[htb]
 \centering
-\lstset{language=Java, stepnumber=1, showspaces=false, showstringspaces=false,breaklines=true}
+\lstset{language=Java, basicstyle=\scriptsize, stepnumber=1, showspaces=false, showstringspaces=false,breaklines=true}
 \begin{lstlisting}
 
 public interface PrincipalCollection extends Iterable, Serializable {
@@ -189,15 +126,16 @@ public interface PrincipalCollection extends Iterable, Serializable {
 }
 
 \end{lstlisting}
-\caption{PrincipalCollection.java}
-\label{PrincipalCollection}
+\caption{[Iterator] PrincipalCollection.java}
+\label{fig:PrincipalCollection}
 \end{figure}
+\FloatBarrier
 
-The DelegatingSubject class, delegates the method calls and iterates the objects without exposing the whole collection:
+The \texttt{DelegatingSubject} class (Figure~\ref{fig:DelegatingSubject}) delegates the method calls and iterates the objects without exposing the whole collection.
 
-\begin{figure}[!tbp]
+\begin{figure}[htb]
 \centering
-\lstset{language=Java, stepnumber=1, showspaces=false, showstringspaces=false,breaklines=true}
+\lstset{language=Java, basicstyle=\scriptsize, stepnumber=1, showspaces=false, showstringspaces=false,breaklines=true}
 \begin{lstlisting}
 
     public DelegatingSubject(PrincipalCollection principals, boolean authenticated, InetAddress inetAddress,
@@ -232,15 +170,16 @@ The DelegatingSubject class, delegates the method calls and iterates the objects
     }
 
 \end{lstlisting}
-\caption{DelegatingSubject.java}
-\label{DelegatingSubject}
+\caption{[Iterator] DelegatingSubject.java}
+\label{fig:DelegatingSubject}
 \end{figure}
+\FloatBarrier
 
-The Subject interface just gets the Objects and Principal Collection and check the role of each element:
+The \texttt{Subject} interface (Figure~\ref{fig:Subject}) just gets the \texttt{Objects}, the \texttt{PrincipalCollection}, and checks the role of each element.
 
-\begin{figure}[!tbp]
+\begin{figure}[htb]
 \centering
-\lstset{language=Java, stepnumber=1, showspaces=false, showstringspaces=false,breaklines=true}
+\lstset{language=Java, basicstyle=\scriptsize, stepnumber=1, showspaces=false, showstringspaces=false,breaklines=true}
 \begin{lstlisting}
 public interface Subject {
 
@@ -250,9 +189,10 @@ public interface Subject {
     void checkRole(String roleIdentifier) throws AuthorizationException;
     void checkRoles(Collection<String> roleIdentifiers) throws AuthorizationException;
 
-...
 }
 \end{lstlisting}
-\caption{Subject.java}
-\label{Subject}
+\caption{[Iterator] Subject.java}
+\label{fig:Subject}
 \end{figure}
+\FloatBarrier
+
